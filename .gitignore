@@ -43,6 +43,7 @@ Android/
 iOSDevice/
 iOSSimulator/
 Linux64/
+Temp/
 
 # IDE options
 *.dproj.local
