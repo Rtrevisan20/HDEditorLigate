@@ -1,0 +1,76 @@
+# Delphi compiled output
+*.dcu
+*.exe
+*.dll
+*.bpl
+*.dcp
+*.so
+*.apk
+*.drc
+*.map
+*.dres
+*.rsm
+*.tds
+*.dcu
+*.lib
+*.a
+*.o
+*.ocx
+
+# Delphi local/user files
+*.local
+*.identcache
+*.projdata
+*.tvsconfig
+*.dsk
+*.CBK
+*.dsk
+
+# Delphi history and recovery
+__history/
+__recovery/
+
+# Delphi temp files
+*.~*
+*.stat
+*.vlb
+
+# Build output
+Win32/
+Win64/
+OSX32/
+Android/
+iOSDevice/
+iOSSimulator/
+Linux64/
+
+# IDE options
+*.dproj.local
+*.groupproj.local
+
+# Generated resources
+*.res
+!*.res  # Keep project resource files if needed
+*.rc
+
+# Unit testing
+*.dunit
+
+# Coverage
+*.iwb
+*.img
+
+# MadExcept
+*.mad
+*.maddont
+*.madres
+
+# EurekaLog
+*.el*
+
+# Installer
+InstallManager/
+*.setup
+
+# AI context
+AGENTS.md
