@@ -7,6 +7,7 @@ uses
   System.Classes,
   ToolsAPI.Editor,
   Vcl.Menus,
+  Vcl.Graphics,
   WinApi.Windows;
 
 type
@@ -18,12 +19,15 @@ type
     FEditorEventsNotifier: Integer;
     FEditorOptions: INTACodeEditorOptions;
     FLigateMenuItem: TMenuItem;
+    FMenuSep: TMenuItem;
+    FFontPreviewItem: TMenuItem;
     procedure PaintText(const Rect: TRect; const ColNum: SmallInt;
       const Text: string; const SyntaxCode: TOTASyntaxCode;
       const Hilight, BeforeEvent: Boolean; var AllowDefaultPainting: Boolean;
       const Context: INTACodeEditorPaintContext);
     procedure ToggleLigateClick(Sender: TObject);
     procedure EditorPopupPopup(Sender: TObject);
+    procedure FontPreviewClick(Sender: TObject);
     procedure LazyInitMenuItem;
   public
     constructor Create;
@@ -52,14 +56,18 @@ const
 
 procedure Register;
 procedure PluginSplash;
+function GetEditorFontName: string;
+function GetEditorBackgroundColor: TColor;
+function GetEditorFontColor(const Kind: TOTASyntaxCode): TColor;
+procedure SetEditorFontName(const Value: string);
 
 implementation
 
 uses
   HDEditorLigate.Drawer,
+  HDEditorLigate.FontPreview,
   System.SysUtils,
-  Vcl.Forms,
-  Vcl.Graphics;
+  Vcl.Forms;
 
 var
   { Quando True, intercepta a pintura do editor para renderizar ligaduras.
@@ -81,7 +89,7 @@ var
   VBmp: Vcl.Graphics.TBitmap;
 begin
   if Supports(SplashScreenServices, IOTASplashScreenServices, LvSplashService) then begin
-    VBmp := TBitmap.Create;
+    VBmp := Vcl.Graphics.TBitmap.Create;
     try
       VBmp.LoadFromResourceName(hInstance, 'SPLASH');
       LvSplashService.AddPluginBitmap(resPackageName, VBmp.Handle, False, resLicense, '');
@@ -119,8 +127,16 @@ begin
   begin
     var LPopup := FLigateMenuItem.GetParentMenu as TPopupMenu;
     if LPopup <> nil then
+    begin
+      LPopup.Items.Remove(FFontPreviewItem);
+      LPopup.Items.Remove(FMenuSep);
       LPopup.Items.Remove(FLigateMenuItem);
+    end;
+    FFontPreviewItem.Free;
+    FMenuSep.Free;
     FLigateMenuItem.Free;
+    FFontPreviewItem := nil;
+    FMenuSep := nil;
     FLigateMenuItem := nil;
   end;
 
@@ -234,6 +250,16 @@ begin
         FLigateMenuItem.Caption := 'Toggle Ligatures';
         FLigateMenuItem.OnClick := ToggleLigateClick;
         LPopup.Items.Add(FLigateMenuItem);
+
+        FMenuSep := TMenuItem.Create(LPopup);
+        FMenuSep.Caption := '-';
+        LPopup.Items.Add(FMenuSep);
+
+        FFontPreviewItem := TMenuItem.Create(LPopup);
+        FFontPreviewItem.Caption := 'Font Preview...';
+        FFontPreviewItem.OnClick := FontPreviewClick;
+        LPopup.Items.Add(FFontPreviewItem);
+
         LPopup.OnPopup := EditorPopupPopup;
       end;
     end;
@@ -266,6 +292,55 @@ procedure TIDEWizard.EditorPopupPopup(Sender: TObject);
 begin
   if FLigateMenuItem <> nil then
     FLigateMenuItem.Checked := LigateEnabled;
+end;
+
+procedure TIDEWizard.FontPreviewClick(Sender: TObject);
+begin
+  TfrmFontPreview.Execute;
+end;
+
+function GetEditorFontName: string;
+var
+  Svc: IOTAEditorServices;
+begin
+  if Supports(BorlandIDEServices, IOTAEditorServices, Svc) then
+    Result := Svc.EditOptions.FontName
+  else
+    Result := '';
+end;
+
+function GetEditorBackgroundColor: TColor;
+var
+  Svc: INTACodeEditorServices;
+begin
+  if Supports(BorlandIDEServices, INTACodeEditorServices, Svc) then
+    Result := Svc.Options.BackgroundColor[atWhiteSpace]
+  else
+    Result := clWindow;
+end;
+
+function GetEditorFontColor(const Kind: TOTASyntaxCode): TColor;
+var
+  Svc: INTACodeEditorServices;
+begin
+  if Supports(BorlandIDEServices, INTACodeEditorServices, Svc) then
+    Result := Svc.Options.FontColor[Kind]
+  else
+    Result := clWindowText;
+end;
+
+procedure SetEditorFontName(const Value: string);
+var
+  Svc: IOTAEditorServices;
+  View: IOTAEditView;
+begin
+  if Supports(BorlandIDEServices, IOTAEditorServices, Svc) then
+  begin
+    Svc.EditOptions.FontName := Value;
+    View := Svc.TopView;
+    if View <> nil then
+      View.GetEditWindow.Form.Invalidate;
+  end;
 end;
 
 initialization

@@ -36,6 +36,7 @@ requires
 contains
   HDEditorLigate.Main in 'src\HDEditorLigate.Main.pas',
   HDEditorLigate.Drawer in 'src\HDEditorLigate.Drawer.pas',
-  HDEditorLigate.UTF8 in 'src\HDEditorLigate.UTF8.pas';
+  HDEditorLigate.UTF8 in 'src\HDEditorLigate.UTF8.pas',
+  HDEditorLigate.FontPreview in 'src\HDEditorLigate.FontPreview.pas';
 
 end.

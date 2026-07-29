@@ -67,10 +67,14 @@ Após a instalação, o plugin ativa automaticamente. Para usar ligaduras:
 2. Fontes recomendadas: JetBrains Mono, Fira Code, Cascadia Code, Iosevka, Hasklig, DejaVu Sans Mono
 3. O editor passará a renderizar operadores com ligaduras imediatamente
 4. Para alternar ligaduras ON/OFF, clique com o botão direito no editor e selecione **Toggle Ligatures** (um ✓ indica que está ativo)
+5. Configure a fonte usando o Font Preview e aplique a fonte direto dessa tela.
 
 Ligaduras ON: ![LigadurasON](https://github.com/Rtrevisan20/HDEditorLigate/blob/master/Resources/LigadurasON.jpg)
 
 Ligaduras OFF: ![LigadurasOFF](https://github.com/Rtrevisan20/HDEditorLigate/blob/master/Resources/LigadurasOFF.jpg)
+
+Font Preview: ![Ativar Font Preview](https://github.com/Rtrevisan20/HDEditorLigate/blob/master/Resources/AtivarFontPreview.jpg)
+![Font Preview](https://github.com/Rtrevisan20/HDEditorLigate/blob/master/Resources/FontPreview.jpg)
 
 ---
 
@@ -81,6 +85,7 @@ HDEditorLigate/
 ├── src/
 │   ├── HDEditorLigate.Main.pas      # Wizard do plugin e callback de pintura
 │   ├── HDEditorLigate.Drawer.pas    # Renderização com GCP, cache e DC persistente
+│   ├── HDEditorLigate.FontPreview.pas # Preview de fontes com ligaduras
 │   └── HDEditorLigate.UTF8.pas      # Correção de texto UTF-8 garbled
 ├── HDEditorLigate.dpk               # Package do Delphi
 ├── HDEditorLigate.dproj             # Projeto do Delphi
@@ -89,11 +94,12 @@ HDEditorLigate/
 
 ### Módulos
 
-| Arquivo      | Responsabilidade                                                                                                         |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------ |
-| `Main.pas`   | Wizard do IDE, intercepta `OnEditorPaintText`, configura cores de sintaxe, item **Toggle Ligatures** no menu de contexto |
-| `Drawer.pas` | Função `UniversalExtTextOut` — cache GCP, DC persistente, renderização de ligaduras, `ClipRect` separado para gutter     |
-| `UTF8.pas`   | Função `RepairGarbledUTF8` — decodifica bytes UTF-8 corrompidos pelo IDE                                                 |
+| Arquivo           | Responsabilidade                                                                                                                             |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Main.pas`        | Wizard do IDE, intercepta `OnEditorPaintText`, configura cores de sintaxe, itens **Toggle Ligatures** e **Font Preview** no menu de contexto |
+| `Drawer.pas`      | Função `UniversalExtTextOut` — cache GCP, DC persistente, renderização de ligaduras, `ClipRect` separado para gutter                         |
+| `FontPreview.pas` | Diálogo `TfrmFontPreview` — lista fontes monoespaçadas, preview com ligaduras, aplica fonte ao editor                                        |
+| `UTF8.pas`        | Função `RepairGarbledUTF8` — decodifica bytes UTF-8 corrompidos pelo IDE                                                                     |
 
 ---
 

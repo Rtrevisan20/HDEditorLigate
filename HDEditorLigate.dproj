@@ -119,6 +119,7 @@
         <DCCReference Include="src\HDEditorLigate.Main.pas"/>
         <DCCReference Include="src\HDEditorLigate.Drawer.pas"/>
         <DCCReference Include="src\HDEditorLigate.UTF8.pas"/>
+        <DCCReference Include="src\HDEditorLigate.FontPreview.pas"/>
         <RcItem Include="Resources\Ligatures.bmp">
             <ResourceType>BITMAP</ResourceType>
             <ResourceId>SPLASH</ResourceId>
