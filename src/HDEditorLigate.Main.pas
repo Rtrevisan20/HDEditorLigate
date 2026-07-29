@@ -17,9 +17,10 @@ type
   TIDEWizard = class(TNotifierObject, IOTAWizard)
   private
     FEditorEventsNotifier: Integer;
+    FNotifierObj: TNTACodeEditorNotifier;
     FEditorOptions: INTACodeEditorOptions;
+    FParentMenuItem: TMenuItem;
     FLigateMenuItem: TMenuItem;
-    FMenuSep: TMenuItem;
     FFontPreviewItem: TMenuItem;
     procedure PaintText(const Rect: TRect; const ColNum: SmallInt;
       const Text: string; const SyntaxCode: TOTASyntaxCode;
@@ -105,17 +106,18 @@ end;
 constructor TIDEWizard.Create;
 begin
   inherited;
-  var LNotifier := TCodeEditorNotifier.Create;
+  FNotifierObj := TCodeEditorNotifier.Create;
   var LEditorServices: INTACodeEditorServices;
   if Supports(BorlandIDEServices, INTACodeEditorServices, LEditorServices) then
   begin
-    FEditorEventsNotifier := LEditorServices.AddEditorEventsNotifier(LNotifier);
+    FEditorEventsNotifier := LEditorServices.AddEditorEventsNotifier(FNotifierObj);
     FEditorOptions := LEditorServices.Options;
   end else
     FEditorEventsNotifier := -1;
-  LNotifier.OnEditorPaintText := PaintText;
+  FNotifierObj.OnEditorPaintText := PaintText;
 
   FLigateMenuItem := nil;
+  FParentMenuItem := nil;
 end;
 
 { Remove o notificador de eventos ao destruir o wizard }
@@ -123,27 +125,20 @@ destructor TIDEWizard.Destroy;
 begin
   ShuttingDown := True;
 
-  if FLigateMenuItem <> nil then
-  begin
-    var LPopup := FLigateMenuItem.GetParentMenu as TPopupMenu;
-    if LPopup <> nil then
-    begin
-      LPopup.Items.Remove(FFontPreviewItem);
-      LPopup.Items.Remove(FMenuSep);
-      LPopup.Items.Remove(FLigateMenuItem);
-    end;
-    FFontPreviewItem.Free;
-    FMenuSep.Free;
-    FLigateMenuItem.Free;
-    FFontPreviewItem := nil;
-    FMenuSep := nil;
-    FLigateMenuItem := nil;
-  end;
+  FEditorOptions := nil;
 
-  var LEditorServices: INTACodeEditorServices;
-  if Supports(BorlandIDEServices, INTACodeEditorServices, LEditorServices) and
-    (FEditorEventsNotifier <> -1) and Assigned(LEditorServices) then
-    LEditorServices.RemoveEditorEventsNotifier(FEditorEventsNotifier);
+  if FNotifierObj <> nil then
+  begin
+    FNotifierObj.OnEditorPaintText := nil;
+    try
+      var LEditorServices: INTACodeEditorServices;
+      if Supports(BorlandIDEServices, INTACodeEditorServices, LEditorServices) and
+        (FEditorEventsNotifier <> -1) then
+        LEditorServices.RemoveEditorEventsNotifier(FEditorEventsNotifier);
+    except
+    end;
+    FNotifierObj := nil;
+  end;
 
   inherited;
 end;
@@ -180,41 +175,53 @@ var
   gutterWidth: Integer;
   lineState: INTACodeEditorLineState;
 begin
-  LazyInitMenuItem;
-
-  if BeforeEvent or Hilight then
-  begin
-    if not LigateEnabled then
+  try
+    if ShuttingDown then
     begin
+      if BeforeEvent then
+        AllowDefaultPainting := True;
+      Exit;
+    end;
+
+    LazyInitMenuItem;
+
+    if BeforeEvent or Hilight then
+    begin
+      if not LigateEnabled then
+      begin
+        AllowDefaultPainting := True;
+        Exit;
+      end;
+
+      AllowDefaultPainting := False;
+
+      drawRect := Rect;
+
+      if Context.LineState <> nil then
+      begin
+        lineState := Context.LineState;
+        gutterWidth := lineState.GutterRect.Width + lineState.GutterLineDataRect.Width;
+        if drawRect.Left < gutterWidth then
+          drawRect.Left := gutterWidth;
+      end;
+      if drawRect.Left >= drawRect.Right then
+        Exit;
+
+      Context.Canvas.Font.Color := FEditorOptions.FontColor[SyntaxCode];
+      Context.Canvas.Font.Style := FEditorOptions.FontStyles[SyntaxCode];
+      Context.Canvas.FillRect(drawRect);
+
+      var DC := Context.Canvas.Handle;
+      SetTextColor(DC, ColorToRGB(FEditorOptions.FontColor[SyntaxCode]));
+      SetBkColor(DC, ColorToRGB(Context.Canvas.Brush.Color));
+
+      UniversalExtTextOut(DC, Rect.Left, Rect.Top,
+        [tooClipped], Rect,
+        PWideChar(Text), Length(Text), nil, False, @drawRect);
+    end;
+  except
+    if BeforeEvent then
       AllowDefaultPainting := True;
-      Exit;
-    end;
-
-    AllowDefaultPainting := False;
-
-    drawRect := Rect;
-
-    if Context.LineState <> nil then
-    begin
-      lineState := Context.LineState;
-      gutterWidth := lineState.GutterRect.Width + lineState.GutterLineDataRect.Width;
-      if drawRect.Left < gutterWidth then
-        drawRect.Left := gutterWidth;
-    end;
-    if drawRect.Left >= drawRect.Right then
-      Exit;
-
-    Context.Canvas.Font.Color := FEditorOptions.FontColor[SyntaxCode];
-    Context.Canvas.Font.Style := FEditorOptions.FontStyles[SyntaxCode];
-    Context.Canvas.FillRect(drawRect);
-
-    var DC := Context.Canvas.Handle;
-    SetTextColor(DC, ColorToRGB(FEditorOptions.FontColor[SyntaxCode]));
-    SetBkColor(DC, ColorToRGB(Context.Canvas.Brush.Color));
-
-    UniversalExtTextOut(DC, Rect.Left, Rect.Top,
-      [tooClipped], Rect,
-      PWideChar(Text), Length(Text), nil, False, @drawRect);
   end;
 end;
 
@@ -238,6 +245,9 @@ begin
   if FLigateMenuItem <> nil then
     Exit;
 
+  if ShuttingDown then
+    Exit;
+
   if Supports(BorlandIDEServices, IOTAEditorServices, LEditorServices) then
   begin
     LEditView := LEditorServices.TopView;
@@ -249,16 +259,17 @@ begin
         FLigateMenuItem := TMenuItem.Create(LPopup);
         FLigateMenuItem.Caption := 'Toggle Ligatures';
         FLigateMenuItem.OnClick := ToggleLigateClick;
-        LPopup.Items.Add(FLigateMenuItem);
-
-        FMenuSep := TMenuItem.Create(LPopup);
-        FMenuSep.Caption := '-';
-        LPopup.Items.Add(FMenuSep);
 
         FFontPreviewItem := TMenuItem.Create(LPopup);
         FFontPreviewItem.Caption := 'Font Preview...';
         FFontPreviewItem.OnClick := FontPreviewClick;
-        LPopup.Items.Add(FFontPreviewItem);
+
+        FParentMenuItem := TMenuItem.Create(LPopup);
+        FParentMenuItem.Caption := 'Editor Ligatures';
+        FParentMenuItem.Add(FLigateMenuItem);
+        FParentMenuItem.Add(FFontPreviewItem);
+
+        LPopup.Items.Add(FParentMenuItem);
 
         LPopup.OnPopup := EditorPopupPopup;
       end;
