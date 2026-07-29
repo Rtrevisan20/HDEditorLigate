@@ -30,11 +30,12 @@ O plugin intercepta o callback `OnEditorPaintText` do IDE e sobrepõe a pintura 
 
 ```
 IDE chama PaintText(texto, rect)
+  → FillRect(drawRect) com ajuste de gutter
   → RepairGarbledUTF8(texto)
   → Cache lookup (FNV-1a hash)
     → HIT: copia glyphs do cache
     → MISS: GCP em DC persistente + salva no cache
-  → ExtTextOut com ETO_GLYPH_INDEX
+  → ExtTextOut com ETO_GLYPH_INDEX + ClipRect separado (gutter)
 ```
 
 ---
@@ -84,18 +85,16 @@ HDEditorLigate/
 
 ### Módulos
 
-| Arquivo      | Responsabilidade                                                                    |
-| ------------ | ----------------------------------------------------------------------------------- |
+| Arquivo      | Responsabilidade                                                                                                         |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------ |
 | `Main.pas`   | Wizard do IDE, intercepta `OnEditorPaintText`, configura cores de sintaxe, item **Toggle Ligatures** no menu de contexto |
-| `Drawer.pas` | Função `UniversalExtTextOut` — cache GCP, DC persistente, renderização de ligaduras |
-| `UTF8.pas`   | Função `RepairGarbledUTF8` — decodifica bytes UTF-8 corrompidos pelo IDE            |
+| `Drawer.pas` | Função `UniversalExtTextOut` — cache GCP, DC persistente, renderização de ligaduras, `ClipRect` separado para gutter     |
+| `UTF8.pas`   | Função `RepairGarbledUTF8` — decodifica bytes UTF-8 corrompidos pelo IDE                                                 |
 
 ---
 
 ## Limitações Conhecidas
 
-- **Seleção de texto** — Quando uma ligadura ocupa 1 glyph mas 2+ caracteres, a seleção pode ficar levemente deslocada
-- **Ligaduras contextuais** — `fi`, `fl`, `ff` etc. não são fundidas (GCP só suporta ligaduras de substituição simples)
 - **Apenas Windows** — Plugin usa APIs Win32 (GDI) diretamente
 
 ---

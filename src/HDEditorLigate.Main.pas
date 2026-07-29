@@ -10,7 +10,7 @@ uses
   WinApi.Windows;
 
 type
-  { Wizard principal do plugin que intercepta a pintura do editor de codigo.
+  {Wizard principal do plugin que intercepta a pintura do editor de codigo.
     Registra um notificador de eventos de editor e sobrepoe a pintura do texto
     para renderizar ligaduras (ex: ->, ===, -->, etc) usando GDI.}
   TIDEWizard = class(TNotifierObject, IOTAWizard)
@@ -34,13 +34,23 @@ type
   end;
 
   { Notificador de eventos do editor que permite interceptar eventos de pintura.
-    O unico evento permitido e cevPaintTextEvents. }
+    O unico evento permitido e cevPaintTextEvents.}
   TCodeEditorNotifier = class(TNTACodeEditorNotifier)
   protected
     function AllowedEvents: TCodeEditorEvents; override;
   end;
 
+const
+  HDT_VERSION = '- v0.1.0';
+
+  resourcestring
+  resPackageName      = 'Editor Ligatures ' + HDT_VERSION;
+  resLicense          = 'Open Source';
+  resAboutTitle       = 'Ligatures';
+  resAboutDescription = 'https://github.com/Rtrevisan20/HDEditorLigate';
+
 procedure Register;
+procedure PluginSplash;
 
 implementation
 
@@ -62,6 +72,22 @@ var
 procedure Register;
 begin
   RegisterPackageWizard(TIDEWizard.Create);
+end;
+
+procedure PluginSplash;
+var
+  LvSplashService: IOTASplashScreenServices;
+  VBmp: Vcl.Graphics.TBitmap;
+begin
+  if Supports(SplashScreenServices, IOTASplashScreenServices, LvSplashService) then begin
+    VBmp := TBitmap.Create;
+    try
+      VBmp.LoadFromResourceName(hInstance, 'SPLASH');
+      LvSplashService.AddPluginBitmap(resPackageName, VBmp.Handle, False, resLicense, '');
+    finally
+      VBmp.Free;
+    end;
+  end;
 end;
 
 { TIDEWizard }
@@ -173,6 +199,8 @@ begin
       if drawRect.Left < gutterWidth then
         drawRect.Left := gutterWidth;
     end;
+    if drawRect.Left >= drawRect.Right then
+      Exit;
 
     Context.Canvas.Font.Color := FEditorOptions.FontColor[SyntaxCode];
     Context.Canvas.Font.Style := FEditorOptions.FontStyles[SyntaxCode];
@@ -182,9 +210,9 @@ begin
     SetTextColor(DC, ColorToRGB(FEditorOptions.FontColor[SyntaxCode]));
     SetBkColor(DC, ColorToRGB(Context.Canvas.Brush.Color));
 
-    UniversalExtTextOut(DC, drawRect.Left, drawRect.Top,
-      [tooOpaque, tooClipped], drawRect,
-      PWideChar(Text), Length(Text), nil);
+    UniversalExtTextOut(DC, Rect.Left, Rect.Top,
+      [tooClipped], Rect,
+      PWideChar(Text), Length(Text), nil, False, @drawRect);
   end;
 end;
 
@@ -223,5 +251,8 @@ begin
   if FLigateMenuItem <> nil then
     FLigateMenuItem.Checked := LigateEnabled;
 end;
+
+initialization
+  PluginSplash;
 
 end.

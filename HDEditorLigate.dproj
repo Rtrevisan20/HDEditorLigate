@@ -119,6 +119,10 @@
         <DCCReference Include="src\HDEditorLigate.Main.pas"/>
         <DCCReference Include="src\HDEditorLigate.Drawer.pas"/>
         <DCCReference Include="src\HDEditorLigate.UTF8.pas"/>
+        <RcItem Include="Ligatures.bmp">
+            <ResourceType>BITMAP</ResourceType>
+            <ResourceId>SPLASH</ResourceId>
+        </RcItem>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>
@@ -161,7 +165,7 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="C:\Users\Public\Documents\Embarcadero\Studio\22.0\Bpl\HDEditorLigate.bpl" Configuration="Debug" Class="ProjectOutput">
+                <DeployFile LocalName="C:\Users\Public\Documents\Embarcadero\Studio\23.0\Bpl\HDEditorLigate.bpl" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win32">
                         <RemoteName>HDEditorLigate.bpl</RemoteName>
                         <Overwrite>true</Overwrite>

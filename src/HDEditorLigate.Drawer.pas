@@ -33,14 +33,16 @@ type
   { Funcao principal de renderizacao: renderiza texto com suporte a ligaduras.
     Consulta cache de GCP e usa DC memoria persistente para evitar
     CreateCompatibleDC/DeleteDC a cada chamada.
-    Se ForceLeftAlign = True, usa TA_LEFT em vez de TA_RIGHT (usado para word wrap). }
+    Se ForceLeftAlign = True, usa TA_LEFT em vez de TA_RIGHT.
+    Se ClipRect <> nil, usa este retangulo para clipping em vez de Rect. }
   function UniversalExtTextOut(DC: HDC; X, Y: Integer;
                                Options: TEditorTextOutOptions;
                                Rect: TRect;
                                Str: PWideChar;
                                Count: Integer;
                                ETODist: PIntegerArray;
-                               ForceLeftAlign: Boolean = False): Boolean;
+                               ForceLeftAlign: Boolean = False;
+                               ClipRect: PRect = nil): Boolean;
 
 implementation
 
@@ -87,7 +89,8 @@ end;
   6. Se GCP falhou: renderiza texto normal com dx proporcional (sem ligaduras) }
 function UniversalExtTextOut(DC: HDC; X, Y: Integer;
   Options: TEditorTextOutOptions; Rect: TRect; Str: PWideChar;
-  Count: Integer; ETODist: PIntegerArray; ForceLeftAlign: Boolean): Boolean;
+  Count: Integer; ETODist: PIntegerArray; ForceLeftAlign: Boolean;
+  ClipRect: PRect): Boolean;
 var
   TextOutFlags: DWORD;
   Glyphs: TArray<UINT>;
@@ -102,7 +105,11 @@ var
   CacheKey: TGCPKey;
   CacheIdx: Integer;
   CacheHit: Boolean;
+  ClipPtr: PRect;
 begin
+  ClipPtr := ClipRect;
+  if ClipPtr = nil then
+    ClipPtr := @Rect;
   TextOutFlags := 0;
   if tooOpaque in Options then
     TextOutFlags := TextOutFlags or ETO_OPAQUE;
@@ -176,10 +183,10 @@ begin
     try
       if (FixedCount <> Count) or ForceLeftAlign then
         ExtTextOut(DC, Rect.Left, Y, TextOutFlags or ETO_GLYPH_INDEX,
-          @Rect, PWideChar(@Glyphs[0]), GCP.nGlyphs, @dx[0])
+          ClipPtr, PWideChar(@Glyphs[0]), GCP.nGlyphs, @dx[0])
       else
         ExtTextOut(DC, Rect.Right, Y, TextOutFlags or ETO_GLYPH_INDEX,
-          @Rect, PWideChar(@Glyphs[0]), GCP.nGlyphs, @dx[0]);
+          ClipPtr, PWideChar(@Glyphs[0]), GCP.nGlyphs, @dx[0]);
     finally
       SetTextAlign(DC, savedAlign);
     end;
@@ -189,7 +196,7 @@ begin
     SetLength(dx, FixedCount);
     for i := 0 to FixedCount - 1 do
       dx[i] := rectW div FixedCount;
-    ExtTextOut(DC, X, Y, TextOutFlags, @Rect, FixedStr, FixedCount, @dx[0]);
+    ExtTextOut(DC, X, Y, TextOutFlags, ClipPtr, FixedStr, FixedCount, @dx[0]);
   end;
 
   Result := True;
