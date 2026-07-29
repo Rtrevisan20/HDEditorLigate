@@ -73,7 +73,8 @@ Ligaduras ON: ![LigadurasON](https://github.com/Rtrevisan20/HDEditorLigate/blob/
 
 Ligaduras OFF: ![LigadurasOFF](https://github.com/Rtrevisan20/HDEditorLigate/blob/master/Resources/LigadurasOFF.jpg)
 
-Font Preview: ![Ativar Font Preview](https://github.com/Rtrevisan20/HDEditorLigate/blob/master/Resources/AtivarFontPreview.jpg)
+Font Preview:
+![Ativar Font Preview](https://github.com/Rtrevisan20/HDEditorLigate/blob/master/Resources/AtivarFontPreview.jpg)
 ![Font Preview](https://github.com/Rtrevisan20/HDEditorLigate/blob/master/Resources/FontPreview.jpg)
 
 ---
