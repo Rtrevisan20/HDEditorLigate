@@ -12,6 +12,7 @@ Flechas (`->`, `=>`, `-->`, `==>`), comparações (`<>`, `===`) e outros operado
 
 - **Ligaduras tipográficas** — Operadores como `->`, `=>`, `-->`, `===`, `<>` são fundidos visualmente
 - **Correção UTF-8** — Corrige automaticamente caracteres acentuados corrompidos pelo bug do IDE (ex: `ç` vira `Ã§`)
+- **Toggle pelo menu de contexto** — Ative/desative as ligaduras diretamente pelo menu de contexto do editor (clique direito)
 - **Cache de performance** — Resultados de ligaduras são cacheados para tokens repetidos, eliminando recálculos
 - **Espaçamento proporcional** — Texto mantém alinhamento correto entre fragmentos do editor
 - **Compatível com múltiplas fontes** — Funciona com JetBrains Mono, Fira Code, Cascadia Code, Iosevka, e outras com suporte a ligaduras
@@ -64,6 +65,7 @@ Após a instalação, o plugin ativa automaticamente. Para usar ligaduras:
 1. Configure uma fonte com suporte a ligaduras no editor (`Tools > Options > Editor > Font`)
 2. Fontes recomendadas: JetBrains Mono, Fira Code, Cascadia Code, Iosevka, Hasklig, DejaVu Sans Mono
 3. O editor passará a renderizar operadores com ligaduras imediatamente
+4. Para alternar ligaduras ON/OFF, clique com o botão direito no editor e selecione **Toggle Ligatures** (um ✓ indica que está ativo)
 
 ---
 
@@ -84,7 +86,7 @@ HDEditorLigate/
 
 | Arquivo      | Responsabilidade                                                                    |
 | ------------ | ----------------------------------------------------------------------------------- |
-| `Main.pas`   | Wizard do IDE, intercepta `OnEditorPaintText`, configura cores de sintaxe           |
+| `Main.pas`   | Wizard do IDE, intercepta `OnEditorPaintText`, configura cores de sintaxe, item **Toggle Ligatures** no menu de contexto |
 | `Drawer.pas` | Função `UniversalExtTextOut` — cache GCP, DC persistente, renderização de ligaduras |
 | `UTF8.pas`   | Função `RepairGarbledUTF8` — decodifica bytes UTF-8 corrompidos pelo IDE            |
 

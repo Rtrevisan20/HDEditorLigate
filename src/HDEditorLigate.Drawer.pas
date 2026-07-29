@@ -32,13 +32,15 @@ type
 
   { Funcao principal de renderizacao: renderiza texto com suporte a ligaduras.
     Consulta cache de GCP e usa DC memoria persistente para evitar
-    CreateCompatibleDC/DeleteDC a cada chamada. }
+    CreateCompatibleDC/DeleteDC a cada chamada.
+    Se ForceLeftAlign = True, usa TA_LEFT em vez de TA_RIGHT (usado para word wrap). }
   function UniversalExtTextOut(DC: HDC; X, Y: Integer;
                                Options: TEditorTextOutOptions;
                                Rect: TRect;
                                Str: PWideChar;
                                Count: Integer;
-                               ETODist: PIntegerArray): Boolean;
+                               ETODist: PIntegerArray;
+                               ForceLeftAlign: Boolean = False): Boolean;
 
 implementation
 
@@ -85,7 +87,7 @@ end;
   6. Se GCP falhou: renderiza texto normal com dx proporcional (sem ligaduras) }
 function UniversalExtTextOut(DC: HDC; X, Y: Integer;
   Options: TEditorTextOutOptions; Rect: TRect; Str: PWideChar;
-  Count: Integer; ETODist: PIntegerArray): Boolean;
+  Count: Integer; ETODist: PIntegerArray; ForceLeftAlign: Boolean): Boolean;
 var
   TextOutFlags: DWORD;
   Glyphs: TArray<UINT>;
@@ -167,12 +169,12 @@ begin
       dx[i] := rectW div Integer(GCP.nGlyphs);
 
     var savedAlign := GetTextAlign(DC);
-    if FixedCount <> Count then
+    if (FixedCount <> Count) or ForceLeftAlign then
       SetTextAlign(DC, (savedAlign and not TA_RIGHT and not TA_CENTER) or TA_LEFT or TA_TOP)
     else
       SetTextAlign(DC, savedAlign or TA_RIGHT or TA_TOP);
     try
-      if FixedCount <> Count then
+      if (FixedCount <> Count) or ForceLeftAlign then
         ExtTextOut(DC, Rect.Left, Y, TextOutFlags or ETO_GLYPH_INDEX,
           @Rect, PWideChar(@Glyphs[0]), GCP.nGlyphs, @dx[0])
       else

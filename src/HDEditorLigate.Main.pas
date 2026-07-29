@@ -4,7 +4,9 @@ interface
 
 uses
   ToolsAPI,
+  System.Classes,
   ToolsAPI.Editor,
+  Vcl.Menus,
   WinApi.Windows;
 
 type
@@ -15,12 +17,13 @@ type
   private
     FEditorEventsNotifier: Integer;
     FEditorOptions: INTACodeEditorOptions;
-    { Callback chamado pelo IDE a cada fragmento de texto a ser pintado.
-      Interrompe a pintura padrao e renderiza com ligaduras via UniversalExtTextOut. }
+    FLigateMenuItem: TMenuItem;
     procedure PaintText(const Rect: TRect; const ColNum: SmallInt;
       const Text: string; const SyntaxCode: TOTASyntaxCode;
       const Hilight, BeforeEvent: Boolean; var AllowDefaultPainting: Boolean;
       const Context: INTACodeEditorPaintContext);
+    procedure ToggleLigateClick(Sender: TObject);
+    procedure EditorPopupPopup(Sender: TObject);
   public
     constructor Create;
     destructor Destroy; override;
@@ -42,9 +45,18 @@ procedure Register;
 implementation
 
 uses
+  HDEditorLigate.Drawer,
   System.SysUtils,
-  Vcl.Graphics,
-  HDEditorLigate.Drawer;
+  Vcl.Forms,
+  Vcl.Graphics;
+
+var
+  { Quando True, intercepta a pintura do editor para renderizar ligaduras.
+    Quando False, permite que o IDE pinte o texto normalmente. }
+  LigateEnabled: Boolean = True;
+
+  { Guarda para evitar crash no uninstall }
+  ShuttingDown: Boolean = False;
 
 { Registra o wizard no package do Delphi IDE }
 procedure Register;
@@ -67,15 +79,46 @@ begin
   end else
     FEditorEventsNotifier := -1;
   LNotifier.OnEditorPaintText := PaintText;
+
+  FLigateMenuItem := nil;
+  var LEditorServices2: IOTAEditorServices;
+  if Supports(BorlandIDEServices, IOTAEditorServices, LEditorServices2) then
+  begin
+    var LEditView := LEditorServices2.TopView;
+    if (LEditView <> nil) and (LEditView.GetEditWindow <> nil) then
+    begin
+      var LPopup := TPopupMenu(LEditView.GetEditWindow.Form.FindComponent('EditorLocalMenu'));
+      if LPopup <> nil then
+      begin
+        FLigateMenuItem := TMenuItem.Create(LPopup);
+        FLigateMenuItem.Caption := 'Toggle Ligatures';
+        FLigateMenuItem.OnClick := ToggleLigateClick;
+        LPopup.Items.Add(FLigateMenuItem);
+        LPopup.OnPopup := EditorPopupPopup;
+      end;
+    end;
+  end;
 end;
 
 { Remove o notificador de eventos ao destruir o wizard }
 destructor TIDEWizard.Destroy;
 begin
+  ShuttingDown := True;
+
+  if FLigateMenuItem <> nil then
+  begin
+    var LPopup := FLigateMenuItem.GetParentMenu as TPopupMenu;
+    if LPopup <> nil then
+      LPopup.Items.Remove(FLigateMenuItem);
+    FLigateMenuItem.Free;
+    FLigateMenuItem := nil;
+  end;
+
   var LEditorServices: INTACodeEditorServices;
   if Supports(BorlandIDEServices, INTACodeEditorServices, LEditorServices) and
     (FEditorEventsNotifier <> -1) and Assigned(LEditorServices) then
     LEditorServices.RemoveEditorEventsNotifier(FEditorEventsNotifier);
+
   inherited;
 end;
 
@@ -113,6 +156,12 @@ var
 begin
   if BeforeEvent or Hilight then
   begin
+    if not LigateEnabled then
+    begin
+      AllowDefaultPainting := True;
+      Exit;
+    end;
+
     AllowDefaultPainting := False;
 
     drawRect := Rect;
@@ -145,6 +194,34 @@ end;
 function TCodeEditorNotifier.AllowedEvents: TCodeEditorEvents;
 begin
   Result := [cevPaintTextEvents];
+end;
+
+{ ToggleLigateClick / EditorPopupPopup }
+
+procedure TIDEWizard.ToggleLigateClick(Sender: TObject);
+var
+  LEditorServices: IOTAEditorServices;
+  LView: IOTAEditView;
+  LEditWindow: INTAEditWindow;
+begin
+  LigateEnabled := not LigateEnabled;
+
+  if Supports(BorlandIDEServices, IOTAEditorServices, LEditorServices) then
+  begin
+    LView := LEditorServices.TopView;
+    if LView <> nil then
+    begin
+      LEditWindow := LView.GetEditWindow;
+      if LEditWindow <> nil then
+        LEditWindow.Form.Invalidate;
+    end;
+  end;
+end;
+
+procedure TIDEWizard.EditorPopupPopup(Sender: TObject);
+begin
+  if FLigateMenuItem <> nil then
+    FLigateMenuItem.Checked := LigateEnabled;
 end;
 
 end.
