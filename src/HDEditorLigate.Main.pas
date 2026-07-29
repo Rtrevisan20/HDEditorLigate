@@ -24,6 +24,7 @@ type
       const Context: INTACodeEditorPaintContext);
     procedure ToggleLigateClick(Sender: TObject);
     procedure EditorPopupPopup(Sender: TObject);
+    procedure LazyInitMenuItem;
   public
     constructor Create;
     destructor Destroy; override;
@@ -107,23 +108,6 @@ begin
   LNotifier.OnEditorPaintText := PaintText;
 
   FLigateMenuItem := nil;
-  var LEditorServices2: IOTAEditorServices;
-  if Supports(BorlandIDEServices, IOTAEditorServices, LEditorServices2) then
-  begin
-    var LEditView := LEditorServices2.TopView;
-    if (LEditView <> nil) and (LEditView.GetEditWindow <> nil) then
-    begin
-      var LPopup := TPopupMenu(LEditView.GetEditWindow.Form.FindComponent('EditorLocalMenu'));
-      if LPopup <> nil then
-      begin
-        FLigateMenuItem := TMenuItem.Create(LPopup);
-        FLigateMenuItem.Caption := 'Toggle Ligatures';
-        FLigateMenuItem.OnClick := ToggleLigateClick;
-        LPopup.Items.Add(FLigateMenuItem);
-        LPopup.OnPopup := EditorPopupPopup;
-      end;
-    end;
-  end;
 end;
 
 { Remove o notificador de eventos ao destruir o wizard }
@@ -180,6 +164,8 @@ var
   gutterWidth: Integer;
   lineState: INTACodeEditorLineState;
 begin
+  LazyInitMenuItem;
+
   if BeforeEvent or Hilight then
   begin
     if not LigateEnabled then
@@ -222,6 +208,36 @@ end;
 function TCodeEditorNotifier.AllowedEvents: TCodeEditorEvents;
 begin
   Result := [cevPaintTextEvents];
+end;
+
+{ Inicializacao tardia do menu de contexto.
+  Criado na primeira chamada de PaintText para garantir que existe um editor ativo
+  (necessario para encontrar o EditorLocalMenu via TopView). }
+procedure TIDEWizard.LazyInitMenuItem;
+var
+  LEditorServices: IOTAEditorServices;
+  LEditView: IOTAEditView;
+  LPopup: TPopupMenu;
+begin
+  if FLigateMenuItem <> nil then
+    Exit;
+
+  if Supports(BorlandIDEServices, IOTAEditorServices, LEditorServices) then
+  begin
+    LEditView := LEditorServices.TopView;
+    if (LEditView <> nil) and (LEditView.GetEditWindow <> nil) then
+    begin
+      LPopup := TPopupMenu(LEditView.GetEditWindow.Form.FindComponent('EditorLocalMenu'));
+      if LPopup <> nil then
+      begin
+        FLigateMenuItem := TMenuItem.Create(LPopup);
+        FLigateMenuItem.Caption := 'Toggle Ligatures';
+        FLigateMenuItem.OnClick := ToggleLigateClick;
+        LPopup.Items.Add(FLigateMenuItem);
+        LPopup.OnPopup := EditorPopupPopup;
+      end;
+    end;
+  end;
 end;
 
 { ToggleLigateClick / EditorPopupPopup }

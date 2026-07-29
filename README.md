@@ -68,6 +68,10 @@ Após a instalação, o plugin ativa automaticamente. Para usar ligaduras:
 3. O editor passará a renderizar operadores com ligaduras imediatamente
 4. Para alternar ligaduras ON/OFF, clique com o botão direito no editor e selecione **Toggle Ligatures** (um ✓ indica que está ativo)
 
+Ligaduras ON: ![LigadurasON](https://github.com/Rtrevisan20/HDEditorLigate/blob/master/Resources/LigadurasON.jpg)
+
+Ligaduras OFF: ![LigadurasOFF](https://github.com/Rtrevisan20/HDEditorLigate/blob/master/Resources/LigadurasOFF.jpg)
+
 ---
 
 ## Estrutura do Projeto
